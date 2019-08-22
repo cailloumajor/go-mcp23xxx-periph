@@ -8,17 +8,17 @@ MCP23xxx series are 8 or 16 bits GPIO port expanders, with SPI or I²C interface
 
 This driver is intended to handle devices in the following table:
 
-Reference | I/O bits | Interface | Max bus freq | Remarks
---------- | -------- | --------- | ------------ | -------
-MCP23008 | 8  | I²C | 1.7 MHz |
-MCP23S08 | 8  | SPI | 10 MHz  |
-MCP23009 | 8  | I²C | 3.4 MHz |
-MCP23S09 | 8  | SPI | 10 MHz  |
-MCP23016 | 16 | I²C | 400 kHz | Obsolete
-MCP23017 | 16 | I²C | 1.7 MHz |
-MCP23S17 | 16 | SPI | 10 MHz  |
-MCP23018 | 16 | I²C | 3.4 MHz |
-MCP23S18 | 16 | SPI | 10 MHz  |
+Reference | I/O bits | Interface
+--------- | -------- | ---------
+MCP23008 | 8  | I²C
+MCP23S08 | 8  | SPI
+MCP23009 | 8  | I²C
+MCP23S09 | 8  | SPI
+MCP23016 | 16 | I²C
+MCP23017 | 16 | I²C
+MCP23S17 | 16 | SPI
+MCP23018 | 16 | I²C
+MCP23S18 | 16 | SPI
 
 ### Datasheets
 
