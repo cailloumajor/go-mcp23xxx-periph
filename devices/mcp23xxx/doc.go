@@ -10,9 +10,6 @@ http://ww1.microchip.com/downloads/en/DeviceDoc/MCP23008-MCP23S08-Data-Sheet-200
 MCP23009 / MCP23S09 :
 http://ww1.microchip.com/downloads/en/DeviceDoc/20002121C.pdf
 
-MCP23016 :
-http://ww1.microchip.com/downloads/en/DeviceDoc/20090C.pdf
-
 MCP23017 / MCP23S17 :
 http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
 
