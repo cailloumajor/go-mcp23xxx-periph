@@ -10,7 +10,7 @@
     },
     "gopls": {
         "usePlaceholders": true, // add parameter placeholders when completing a function
-        "wantCompletionDocumentation": true // for documentation in completion items
+        "completionDocumentation": true // for documentation in completion items
     },
     "go.vetFlags": [
         "-vettool=$(which shadow)"
