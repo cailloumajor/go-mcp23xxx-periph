@@ -103,32 +103,28 @@ func (d *Dev) Halt() error {
 	return fmt.Errorf("unimplemented")
 }
 
-// ReadReg reads and returns a register, given its mnemonic.
-//
-// This is a low-level method.
-func (d *Dev) ReadReg(regName string) (byte, error) {
+// readReg reads and returns a register, given its mnemonic.
+func (d *Dev) readReg(regName string) (byte, error) {
 	addr, err := d.regs.addr(regName)
 	if err != nil {
-		return 0, d.wrap(err, "ReadReg")
+		return 0, d.wrap(err, "readReg")
 	}
 	w, r := d.makeTxData(addr, nil)
 	if err := d.c.Tx(w, r); err != nil {
-		return 0, d.wrap(err, "ReadReg")
+		return 0, d.wrap(err, "readReg")
 	}
 	return r[len(r)-1], nil
 }
 
-// WriteReg writes a register, given its mnemonic and the value to write.
-//
-// This is a low-level method.
-func (d *Dev) WriteReg(regName string, val byte) error {
+// writeReg writes a register, given its mnemonic and the value to write.
+func (d *Dev) writeReg(regName string, val byte) error {
 	addr, err := d.regs.addr(regName)
 	if err != nil {
-		return d.wrap(err, "write register")
+		return d.wrap(err, "writeReg")
 	}
 	w, r := d.makeTxData(addr, &val)
 	if err := d.c.Tx(w, r); err != nil {
-		return d.wrap(err, "write register")
+		return d.wrap(err, "writeReg")
 	}
 	return nil
 }
