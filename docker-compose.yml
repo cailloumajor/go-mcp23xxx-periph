@@ -1,0 +1,10 @@
+version: '3'
+services:
+  godoc:
+    build:
+      context: .
+      dockerfile: Dockerfile.godoc
+    ports:
+      - "6060:6060"
+    volumes:
+      - .:/go/src/github.com/cailloumajor/go-mcp23xxx-periph

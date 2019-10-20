@@ -1,0 +1,5 @@
+FROM golang:1.13
+
+RUN go get golang.org/x/tools/cmd/godoc
+
+CMD ["godoc", "-http=:6060"]
