@@ -2,8 +2,6 @@ package mcp23xxx
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
 
 	"periph.io/x/periph/conn"
 	"periph.io/x/periph/conn/i2c"
@@ -13,18 +11,18 @@ import (
 
 // Opts holds the configuration options for the device.
 type Opts struct {
-	Model string           // Chip model
-	A0    bool             // Logical state of A0 pin
-	A1    bool             // Logical state of A1 pin
-	A2    bool             // Logical state of A2 pin
-	IFCfg func(*Dev) error // Interface configuration function
+	Model  string           // Chip model
+	HWAddr uint8            // Hardware address (refer to datasheet)
+	IFCfg  func(*Dev) error // Interface configuration function
 }
 
 // I2C configures the device to work on I²C.
 func I2C(bus i2c.Bus) func(*Dev) error {
 	return func(d *Dev) error {
+		if d.isSPI {
+			return fmt.Errorf("inconsistent chip model and interface")
+		}
 		c := &i2c.Dev{Bus: bus, Addr: uint16(0x20 | d.hwAddr)}
-		d.isI2C = true
 		d.c = c
 		return nil
 	}
@@ -33,11 +31,13 @@ func I2C(bus i2c.Bus) func(*Dev) error {
 // SPI configures the device to work on SPI.
 func SPI(port spi.Port, f physic.Frequency) func(*Dev) error {
 	return func(d *Dev) error {
+		if !d.isSPI {
+			return fmt.Errorf("inconsistent chip model and interface")
+		}
 		c, err := port.Connect(f, spi.Mode0, 8)
 		if err != nil {
 			return fmt.Errorf("SPI: %v", err)
 		}
-		d.isSPI = true
 		d.c = c
 		return nil
 	}
@@ -45,38 +45,22 @@ func SPI(port spi.Port, f physic.Frequency) func(*Dev) error {
 
 // New returns a handle to a MCP23xxx I/O expander.
 func New(opts *Opts) (*Dev, error) {
-	var hwaddr uint8
-	for i, v := range [3]bool{opts.A0, opts.A1, opts.A2} {
-		if v {
-			hwaddr |= 1 << uint(i)
-		}
+	d := &Dev{hwAddr: opts.HWAddr}
+
+	f, ok := mcp23xxxChip[opts.Model]
+	if !ok {
+		return nil, fmt.Errorf("mcp23xxx: unknown chip: %q", opts.Model)
 	}
+	if opts.HWAddr > f.maxAddr {
+		return nil, fmt.Errorf("mcp23xxx: hardware address too high for this chip")
+	}
+	d.isSPI, d.regs = f.isSPI, f.regs
 
-	d := &Dev{hwAddr: hwaddr}
-
+	if opts.IFCfg == nil {
+		return nil, fmt.Errorf("mcp23xxx: missing interface configuration function")
+	}
 	if err := opts.IFCfg(d); err != nil {
 		return nil, fmt.Errorf("mcp23xxx: %v", err)
-	}
-
-	const modelRegExp = `^MCP23([0S])(0[89]|1[78])$`
-	model := strings.ToUpper(opts.Model)
-	sm := regexp.MustCompile(modelRegExp).FindStringSubmatch(model)
-	if len(sm) != 3 {
-		return nil, fmt.Errorf("mcp23xxx: unknown chip: %q", model)
-	}
-
-	switch {
-	case sm[1] == "0" && !d.isI2C:
-		return nil, fmt.Errorf("mcp23xxx: chip %v must be configured with I²C", model)
-	case sm[1] == "S" && !d.isSPI:
-		return nil, fmt.Errorf("mcp23xxx: chip %v must be configured with SPI", model)
-	}
-
-	switch sm[2] {
-	case "08", "09":
-		d.regs = reg8bits
-	case "17", "18":
-		d.regs = reg16bits
 	}
 
 	return d, nil
@@ -86,9 +70,8 @@ func New(opts *Opts) (*Dev, error) {
 //
 // It implements conn.Resource.
 type Dev struct {
-	hwAddr uint8
 	c      conn.Conn
-	isI2C  bool
+	hwAddr uint8
 	isSPI  bool
 	regs   registers
 }

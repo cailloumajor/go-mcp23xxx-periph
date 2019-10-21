@@ -4,6 +4,23 @@ import (
 	"fmt"
 )
 
+type features struct {
+	isSPI   bool
+	regs    registers
+	maxAddr uint8
+}
+
+var mcp23xxxChip = map[string]features{
+	"MCP23008": {false, reg8bits, 7},
+	"MCP23S08": {true, reg8bits, 3},
+	"MCP23009": {false, reg8bits, 7},
+	"MCP23S09": {true, reg8bits, 7},
+	"MCP23017": {false, reg16bits, 7},
+	"MCP23S17": {true, reg16bits, 7},
+	"MCP23018": {false, reg16bits, 7},
+	"MCP23S18": {true, reg16bits, 7},
+}
+
 type registers map[string]byte
 
 var reg8bits = registers{
