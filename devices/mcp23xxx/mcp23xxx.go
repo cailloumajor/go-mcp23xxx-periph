@@ -51,13 +51,20 @@ func New(opts *Opts) (*Dev, error) {
 	if !ok {
 		return nil, fmt.Errorf("mcp23xxx: unknown chip: %q", opts.Model)
 	}
+
+	d.model, d.isSPI, d.regs = opts.Model, f.isSPI, f.regs
+
 	if opts.HWAddr > f.maxAddr {
-		return nil, fmt.Errorf("mcp23xxx: hardware address too high for this chip")
+		return nil, fmt.Errorf(
+			"mcp23xxx: maximum hardware address for %v is %v",
+			d.model, f.maxAddr,
+		)
 	}
-	d.isSPI, d.regs = f.isSPI, f.regs
 
 	if opts.IFCfg == nil {
-		return nil, fmt.Errorf("mcp23xxx: missing interface configuration function")
+		return nil, fmt.Errorf(
+			"mcp23xxx: missing interface configuration function",
+		)
 	}
 	if err := opts.IFCfg(d); err != nil {
 		return nil, fmt.Errorf("mcp23xxx: %v", err)
@@ -71,6 +78,7 @@ func New(opts *Opts) (*Dev, error) {
 // It implements conn.Resource.
 type Dev struct {
 	c      conn.Conn
+	model  string
 	hwAddr uint8
 	isSPI  bool
 	regs   registers
@@ -79,7 +87,7 @@ type Dev struct {
 // String returns a human readable identifier representing this resource in a
 // descriptive way for the user (implements conn.Resource).
 func (d *Dev) String() string {
-	return fmt.Sprintf("mcp23xxx/%v@%v", d.c, d.hwAddr)
+	return fmt.Sprintf("%v/%v@%v", d.model, d.c, d.hwAddr)
 }
 
 // Halt halts each GPIO pin (implements conn.Resource).
