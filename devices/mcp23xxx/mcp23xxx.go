@@ -76,13 +76,14 @@ type Dev struct {
 	regs   registers
 }
 
+// String returns a human readable identifier representing this resource in a
+// descriptive way for the user (implements conn.Resource).
 func (d *Dev) String() string {
 	return fmt.Sprintf("mcp23xxx/%v@%v", d.c, d.hwAddr)
 }
 
-// Halt halts each GPIO pin.
-// FIXME implement
-func (d *Dev) Halt() error {
+// Halt halts each GPIO pin (implements conn.Resource).
+func (d *Dev) Halt() error { // FIXME implement
 	return fmt.Errorf("unimplemented")
 }
 
