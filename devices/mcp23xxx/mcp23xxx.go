@@ -52,7 +52,7 @@ func New(opts *Opts) (*Dev, error) {
 		return nil, fmt.Errorf("mcp23xxx: unknown chip: %q", opts.Model)
 	}
 
-	d.model, d.isSPI, d.regs = opts.Model, f.isSPI, f.regs
+	d.model, d.isSPI, d.is16bits = opts.Model, f.isSPI, f.is16bits
 
 	if opts.HWAddr > f.maxAddr {
 		return nil, fmt.Errorf(
@@ -77,11 +77,11 @@ func New(opts *Opts) (*Dev, error) {
 //
 // It implements conn.Resource.
 type Dev struct {
-	c      conn.Conn
-	model  string
-	hwAddr uint8
-	isSPI  bool
-	regs   registers
+	c        conn.Conn
+	model    string
+	hwAddr   uint8
+	isSPI    bool
+	is16bits bool
 }
 
 // String returns a human readable identifier representing this resource in a
@@ -95,26 +95,18 @@ func (d *Dev) Halt() error { // FIXME implement
 	return fmt.Errorf("unimplemented")
 }
 
-// readReg reads and returns a register, given its mnemonic.
-func (d *Dev) readReg(regName string) (byte, error) {
-	addr, err := d.regs.addr(regName)
-	if err != nil {
-		return 0, d.wrap(err, "readReg")
-	}
-	w, r := d.makeTxData(addr, nil)
+// readReg reads and returns a register, given its address.
+func (d *Dev) readReg(ra regAddr) (byte, error) {
+	w, r := d.makeTxData(ra, nil)
 	if err := d.c.Tx(w, r); err != nil {
 		return 0, d.wrap(err, "readReg")
 	}
 	return r[len(r)-1], nil
 }
 
-// writeReg writes a register, given its mnemonic and the value to write.
-func (d *Dev) writeReg(regName string, val byte) error {
-	addr, err := d.regs.addr(regName)
-	if err != nil {
-		return d.wrap(err, "writeReg")
-	}
-	w, r := d.makeTxData(addr, &val)
+// writeReg writes a register, given its address and the value to write.
+func (d *Dev) writeReg(ra regAddr, val byte) error {
+	w, r := d.makeTxData(ra, &val)
 	if err := d.c.Tx(w, r); err != nil {
 		return d.wrap(err, "writeReg")
 	}
@@ -137,7 +129,11 @@ func (d *Dev) writeReg(regName string, val byte) error {
 // 0xCC: control byte (SPI)
 // 0xDD: data read
 // 0xWW: data to write
-func (d *Dev) makeTxData(regAddr byte, write *byte) (w, r []byte) {
+func (d *Dev) makeTxData(ra regAddr, write *byte) (w, r []byte) {
+	regAddr := byte(ra)
+	if d.is16bits {
+		regAddr |= 0x10
+	}
 	w = append(w, regAddr)
 	if d.isSPI {
 		ctrlByte := (0x20 | d.hwAddr) << 1
