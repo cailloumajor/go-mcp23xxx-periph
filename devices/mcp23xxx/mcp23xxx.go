@@ -70,6 +70,12 @@ func New(opts *Opts) (*Dev, error) {
 		return nil, fmt.Errorf("mcp23xxx: %v", err)
 	}
 
+	if d.is16bits {
+		// Set BANK bit of IOCON register for 2-ports chip
+		d.writeReg(rIOCONBANK0, cBANK)
+	}
+	d.writeReg(rIOCON.addr(false), f.conf)
+
 	return d, nil
 }
 
