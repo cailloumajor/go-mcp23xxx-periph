@@ -96,7 +96,7 @@ func (d *Dev) Halt() error { // FIXME implement
 }
 
 // readReg reads and returns a register, given its address.
-func (d *Dev) readReg(ra regAddr) (byte, error) {
+func (d *Dev) readReg(ra byte) (byte, error) {
 	w, r := d.makeTxData(ra, nil)
 	if err := d.c.Tx(w, r); err != nil {
 		return 0, d.wrap(err, "readReg")
@@ -105,7 +105,7 @@ func (d *Dev) readReg(ra regAddr) (byte, error) {
 }
 
 // writeReg writes a register, given its address and the value to write.
-func (d *Dev) writeReg(ra regAddr, val byte) error {
+func (d *Dev) writeReg(ra, val byte) error {
 	w, r := d.makeTxData(ra, &val)
 	if err := d.c.Tx(w, r); err != nil {
 		return d.wrap(err, "writeReg")
@@ -129,12 +129,8 @@ func (d *Dev) writeReg(ra regAddr, val byte) error {
 // 0xCC: control byte (SPI)
 // 0xDD: data read
 // 0xWW: data to write
-func (d *Dev) makeTxData(ra regAddr, write *byte) (w, r []byte) {
-	regAddr := byte(ra)
-	if d.is16bits {
-		regAddr |= 0x10
-	}
-	w = append(w, regAddr)
+func (d *Dev) makeTxData(ra byte, write *byte) (w, r []byte) {
+	w = append(w, ra)
 	if d.isSPI {
 		ctrlByte := (0x20 | d.hwAddr) << 1
 		w = append([]byte{ctrlByte}, w...) // Prepend control byte

@@ -17,20 +17,27 @@ var mcp23xxxChip = map[string]features{
 	"MCP23S18": {true, true, 7},
 }
 
-type regAddr byte
+type register byte
 
 const (
 	// Register addresses.
-	rIODIR      regAddr = 0x00
-	rIPOL       regAddr = 0x01
-	rGPINTEN    regAddr = 0x02
-	rDEFVAL     regAddr = 0x03
-	rINTCON     regAddr = 0x04
-	rIOCON      regAddr = 0x05
-	rGPPU       regAddr = 0x06
-	rINTF       regAddr = 0x07
-	rINTCAP     regAddr = 0x08
-	rGPIO       regAddr = 0x09
-	rOLAT       regAddr = 0x0A
-	rIOCONBANK0 regAddr = 0x0B
+	rIODIR      register = 0x00
+	rIPOL       register = 0x01
+	rGPINTEN    register = 0x02
+	rDEFVAL     register = 0x03
+	rINTCON     register = 0x04
+	rIOCON      register = 0x05
+	rGPPU       register = 0x06
+	rINTF       register = 0x07
+	rINTCAP     register = 0x08
+	rGPIO       register = 0x09
+	rOLAT       register = 0x0A
+	rIOCONBANK0 byte     = 0x0B
 )
+
+func (r register) addr(bankB bool) byte {
+	if bankB {
+		return byte(r) | 0x10
+	}
+	return byte(r)
+}
