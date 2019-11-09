@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"periph.io/x/periph/conn"
+	"periph.io/x/periph/conn/conntest"
 	"periph.io/x/periph/conn/i2c/i2ctest"
 	"periph.io/x/periph/conn/spi/spitest"
 )
@@ -60,6 +61,18 @@ func TestNewError(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDevString(t *testing.T) {
+	d := &Dev{
+		c:      &conntest.Discard{},
+		model:  "Model",
+		hwAddr: 255,
+	}
+	if exp, got := "Model/discard@255", d.String(); got != exp {
+		t.Fatalf("expected %q, got %q", exp, got)
+	}
+
 }
 
 type expectError bool
