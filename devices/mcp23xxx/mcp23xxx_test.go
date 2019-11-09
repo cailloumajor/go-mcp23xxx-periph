@@ -15,41 +15,48 @@ func TestDevImplementsResource(t *testing.T) {
 	}
 }
 
-func TestNew(t *testing.T) {
-	cases := map[string]struct {
-		o   Opts
-		exp expectError
-	}{
-		"alright I²C": {
-			Opts{"MCP23017", 0, I2C(&i2ctest.Record{})}, expNoError,
-		},
-		"alright SPI": {
-			Opts{"MCP23S08", 0, SPI(&spitest.Record{}, 0)}, expNoError,
-		},
+func TestNewNoError(t *testing.T) {
+	cases := map[string]Opts{
+		"I²C": {"MCP23017", 0, I2C(&i2ctest.Record{})},
+		"SPI": {"MCP23S08", 0, SPI(&spitest.Record{}, 0)},
+	}
+	for desc, opts := range cases {
+		t.Run(desc, func(t *testing.T) {
+			var d interface{}
+			d, err := New(&opts)
+			got, ok := d.(*Dev)
+			if !ok || err != nil {
+				t.Fatalf("expected (*Dev, nil), got (%v, %v)", got, err)
+			}
+		})
+	}
+}
+
+func TestNewError(t *testing.T) {
+	cases := map[string]Opts{
 		"inconsistent I²C": {
-			Opts{"MCP23S09", 0, I2C(&i2ctest.Record{})}, expError,
+			"MCP23S09", 0, I2C(&i2ctest.Record{}),
 		},
 		"inconsistent SPI": {
-			Opts{"MCP23009", 0, SPI(&spitest.Record{}, 0)}, expError,
+			"MCP23009", 0, SPI(&spitest.Record{}, 0),
 		},
 		"SPI error": {
-			Opts{"MCP23S17", 0, SPI(&spitest.Record{Initialized: true}, 0)}, expError,
+			"MCP23S17", 0, SPI(&spitest.Record{Initialized: true}, 0),
 		},
 		"unknown chip": {
-			Opts{"", 0, I2C(&i2ctest.Record{})}, expError,
+			"", 0, I2C(&i2ctest.Record{}),
 		},
 		"hardware address too high": {
-			Opts{"MCP23S08", 4, SPI(&spitest.Record{}, 0)}, expError,
+			"MCP23S08", 4, SPI(&spitest.Record{}, 0),
 		},
 		"missing interface configuration": {
-			Opts{Model: "MCP23018", HWAddr: 0}, expError,
+			Model: "MCP23018", HWAddr: 0,
 		},
 	}
-	for desc, test := range cases {
+	for desc, opts := range cases {
 		t.Run(desc, func(t *testing.T) {
-			_, err := New(&test.o)
-			if test.exp != (err != nil) {
-				t.Fatalf("expected %v, got \"%v\"", test.exp, err)
+			if d, err := New(&opts); d != nil || err == nil {
+				t.Fatalf("expected (nil, error), got (%v, %v)", d, err)
 			}
 		})
 	}
