@@ -9,14 +9,14 @@ import (
 	"periph.io/x/periph/conn/spi/spitest"
 )
 
-func TestDevImplementsResource(t *testing.T) {
+func TestDev_implements_Resource(t *testing.T) {
 	var i interface{} = new(Dev)
 	if _, ok := i.(conn.Resource); !ok {
 		t.Fatalf("expected %T to implement conn.Resource", i)
 	}
 }
 
-func TestNewNoError(t *testing.T) {
+func TestNew_no_error(t *testing.T) {
 	cases := map[string]Opts{
 		"I²C": {"MCP23017", 0, I2C(&i2ctest.Record{})},
 		"SPI": {"MCP23S08", 0, SPI(&spitest.Record{}, 0)},
@@ -33,7 +33,7 @@ func TestNewNoError(t *testing.T) {
 	}
 }
 
-func TestNewError(t *testing.T) {
+func TestNew_error(t *testing.T) {
 	cases := map[string]Opts{
 		"inconsistent I²C": {
 			"MCP23S09", 0, I2C(&i2ctest.Record{}),
@@ -74,17 +74,3 @@ func TestDevString(t *testing.T) {
 	}
 
 }
-
-type expectError bool
-
-func (e expectError) String() string {
-	if e {
-		return "error"
-	}
-	return "no error"
-}
-
-const (
-	expNoError expectError = false
-	expError   expectError = true
-)
