@@ -45,9 +45,10 @@ func SPI(port spi.Port, f physic.Frequency) func(*Dev) error {
 
 // New returns a handle to a MCP23xxx I/O expander.
 func New(opts *Opts) (*Dev, error) {
-	d := new(Dev)
-	d.model = opts.Model
-	d.hwAddr = opts.HWAddr
+	d := &Dev{
+		model:  opts.Model,
+		hwAddr: opts.HWAddr,
+	}
 
 	f, ok := mcp23xxxChip[opts.Model]
 	if !ok {
