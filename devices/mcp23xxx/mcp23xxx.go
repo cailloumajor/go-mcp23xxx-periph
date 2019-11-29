@@ -12,13 +12,16 @@ import (
 
 // Opts holds the configuration options for the device.
 type Opts struct {
-	Model  string           // Chip model
-	HWAddr uint8            // Hardware address (refer to datasheet)
-	IFCfg  func(*Dev) error // Interface configuration function
+	Model  string // Chip model
+	HWAddr uint8  // Hardware address (refer to datasheet)
+	IFCfg         // Interface configuration function
 }
 
+// IFCfg represents a function to configure the communication interface.
+type IFCfg func(*Dev) error
+
 // I2C configures the device to work on I²C.
-func I2C(bus i2c.Bus) func(*Dev) error {
+func I2C(bus i2c.Bus) IFCfg {
 	return func(d *Dev) error {
 		if d.isSPI {
 			return fmt.Errorf("inconsistent chip model and interface")
@@ -30,7 +33,7 @@ func I2C(bus i2c.Bus) func(*Dev) error {
 }
 
 // SPI configures the device to work on SPI.
-func SPI(port spi.Port, f physic.Frequency) func(*Dev) error {
+func SPI(port spi.Port, f physic.Frequency) IFCfg {
 	return func(d *Dev) error {
 		if !d.isSPI {
 			return fmt.Errorf("inconsistent chip model and interface")
