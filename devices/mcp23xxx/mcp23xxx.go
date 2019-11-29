@@ -2,6 +2,7 @@ package mcp23xxx
 
 import (
 	"fmt"
+	"sync"
 
 	"periph.io/x/periph/conn"
 	"periph.io/x/periph/conn/i2c"
@@ -85,6 +86,8 @@ type Dev struct {
 	hwAddr   uint8
 	isSPI    bool
 	is16bits bool
+
+	sync.Mutex
 }
 
 // String returns a human readable identifier representing this resource in a
@@ -100,18 +103,34 @@ func (d *Dev) Halt() error { // FIXME implement
 
 // readReg reads and returns a register, given its address.
 func (d *Dev) readReg(ra byte) (byte, error) {
-	w, r := d.makeTxData(ra, nil)
-	if err := d.c.Tx(w, r); err != nil {
-		return 0, d.wrap(err, "readReg")
-	}
-	return r[len(r)-1], nil
+	d.Lock()
+	defer d.Unlock()
+	return d.readRegUnderLock(ra)
 }
 
 // writeReg writes a register, given its address and the value to write.
 func (d *Dev) writeReg(ra, val byte) error {
+	d.Lock()
+	defer d.Unlock()
+	return d.writeRegUnderLock(ra, val)
+}
+
+// readRegUnderLock reads and returns a register, given its address.
+// It is intended to be called under mutex lock.
+func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
+	w, r := d.makeTxData(ra, nil)
+	if err := d.c.Tx(w, r); err != nil {
+		return 0, d.wrap(err, "read register")
+	}
+	return r[len(r)-1], nil
+}
+
+// writeRegUnderLock writes a register, given its address and the value to write.
+// It is intended to be called under mutex lock.
+func (d *Dev) writeRegUnderLock(ra, val byte) error {
 	w, r := d.makeTxData(ra, &val)
 	if err := d.c.Tx(w, r); err != nil {
-		return d.wrap(err, "writeReg")
+		return d.wrap(err, "write register")
 	}
 	return nil
 }
