@@ -40,7 +40,7 @@ func SPI(port spi.Port, f physic.Frequency) IFCfg {
 		}
 		c, err := port.Connect(f, spi.Mode0, 8)
 		if err != nil {
-			return fmt.Errorf("SPI: %v", err)
+			return err
 		}
 		d.c = c
 		return nil
@@ -123,7 +123,7 @@ func (d *Dev) writeReg(ra, val byte) error {
 func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
 	w, r := d.makeTxData(ra, nil)
 	if err := d.c.Tx(w, r); err != nil {
-		return 0, d.wrap(err, "read register")
+		return 0, d.wrap(err)
 	}
 	return r[len(r)-1], nil
 }
@@ -133,7 +133,7 @@ func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
 func (d *Dev) writeRegUnderLock(ra, val byte) error {
 	w, r := d.makeTxData(ra, &val)
 	if err := d.c.Tx(w, r); err != nil {
-		return d.wrap(err, "write register")
+		return d.wrap(err)
 	}
 	return nil
 }
@@ -172,6 +172,6 @@ func (d *Dev) makeTxData(ra byte, write *byte) (w, r []byte) {
 	return
 }
 
-func (d *Dev) wrap(err error, ctx string) error {
-	return fmt.Errorf("%v: %v: %v", d, ctx, err)
+func (d *Dev) wrap(err error) error {
+	return fmt.Errorf("%v: %v", d, err)
 }
