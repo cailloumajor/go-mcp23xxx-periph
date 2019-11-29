@@ -72,7 +72,7 @@ func New(opts *Opts) (*Dev, error) {
 		return nil, fmt.Errorf("mcp23xxx: %v", err)
 	}
 
-	d.writeReg(rIOCON.addr(false), f.conf)
+	d.writeReg(rIOCON, f.conf)
 
 	return d, nil
 }
