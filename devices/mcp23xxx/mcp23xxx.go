@@ -1,6 +1,7 @@
 package mcp23xxx
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -54,25 +55,26 @@ func New(opts *Opts) (*Dev, error) {
 		hwAddr: opts.HWAddr,
 	}
 
+	bad := func(err error) (*Dev, error) { return nil, d.wrap("New()", err) }
+
 	f, ok := mcp23xxxChip[opts.Model]
 	if !ok {
-		return nil, fmt.Errorf("mcp23xxx: unknown chip: %q", opts.Model)
+		return bad(errors.New("Unknown chip"))
 	}
 	d.isSPI, d.is16bits = f.isSPI, f.is16bits
 	if opts.HWAddr > f.maxAddr {
-		return nil, fmt.Errorf(
-			"mcp23xxx: maximum hardware address for %v is %v",
-			opts.Model, f.maxAddr,
-		)
+		return bad(fmt.Errorf(
+			"maximum hardware address for %v is %v",
+			opts.Model,
+			f.maxAddr,
+		))
 	}
 
 	if opts.IFCfg == nil {
-		return nil, fmt.Errorf(
-			"mcp23xxx: missing interface configuration function",
-		)
+		return bad(errors.New("missing interface configuration function"))
 	}
 	if err := opts.IFCfg(d); err != nil {
-		return nil, fmt.Errorf("mcp23xxx: %v", err)
+		return bad(err)
 	}
 
 	d.writeReg(rIOCON, f.conf)
@@ -138,7 +140,7 @@ func (d *Dev) updateReg(ra, mask byte, set bool) error {
 func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
 	w, r := d.makeTxData(ra, nil)
 	if err := d.c.Tx(w, r); err != nil {
-		return 0, d.wrap(err)
+		return 0, d.wrap("read register", err)
 	}
 	return r[len(r)-1], nil
 }
@@ -148,7 +150,7 @@ func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
 func (d *Dev) writeRegUnderLock(ra, val byte) error {
 	w, r := d.makeTxData(ra, &val)
 	if err := d.c.Tx(w, r); err != nil {
-		return d.wrap(err)
+		return d.wrap("write register", err)
 	}
 	return nil
 }
@@ -187,6 +189,6 @@ func (d *Dev) makeTxData(ra byte, write *byte) (w, r []byte) {
 	return
 }
 
-func (d *Dev) wrap(err error) error {
-	return fmt.Errorf("%v: %v", d, err)
+func (d *Dev) wrap(op string, err error) error {
+	return &mcp23xxxError{d, op, err}
 }
