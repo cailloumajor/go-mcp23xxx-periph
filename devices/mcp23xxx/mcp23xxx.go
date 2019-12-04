@@ -118,6 +118,21 @@ func (d *Dev) writeReg(ra, val byte) error {
 	return d.writeRegUnderLock(ra, val)
 }
 
+func (d *Dev) updateReg(ra, mask byte, set bool) error {
+	d.Lock()
+	defer d.Unlock()
+	rv, err := d.readRegUnderLock(ra)
+	if err != nil {
+		return err
+	}
+	if set {
+		rv = rv | mask
+	} else {
+		rv = rv &^ mask
+	}
+	return d.writeRegUnderLock(ra, rv)
+}
+
 // readRegUnderLock reads and returns a register, given its address.
 // It is intended to be called under mutex lock.
 func (d *Dev) readRegUnderLock(ra byte) (byte, error) {
