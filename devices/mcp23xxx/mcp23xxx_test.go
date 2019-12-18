@@ -18,8 +18,8 @@ func TestDev_implements_Resource(t *testing.T) {
 
 func TestNew_no_error(t *testing.T) {
 	cases := map[string]Opts{
-		"I²C": {"MCP23017", 0, I2C(&i2ctest.Record{})},
-		"SPI": {"MCP23S08", 0, SPI(&spitest.Record{}, 0)},
+		"I²C": {Model: "MCP23017", IFCfg: I2C(&i2ctest.Record{})},
+		"SPI": {Model: "MCP23S08", IFCfg: SPI(&spitest.Record{}, 0)},
 	}
 	for desc, opts := range cases {
 		t.Run(desc, func(t *testing.T) {
@@ -36,19 +36,20 @@ func TestNew_no_error(t *testing.T) {
 func TestNew_error(t *testing.T) {
 	cases := map[string]Opts{
 		"inconsistent I²C": {
-			"MCP23S09", 0, I2C(&i2ctest.Record{}),
+			Model: "MCP23S09", IFCfg: I2C(&i2ctest.Record{}),
 		},
 		"inconsistent SPI": {
-			"MCP23009", 0, SPI(&spitest.Record{}, 0),
+			Model: "MCP23009", IFCfg: SPI(&spitest.Record{}, 0),
 		},
 		"SPI error": {
-			"MCP23S17", 0, SPI(&spitest.Record{Initialized: true}, 0),
+			Model: "MCP23S17",
+			IFCfg: SPI(&spitest.Record{Initialized: true}, 0),
 		},
 		"unknown chip": {
-			"", 0, I2C(&i2ctest.Record{}),
+			IFCfg: I2C(&i2ctest.Record{}),
 		},
 		"hardware address too high": {
-			"MCP23S08", 4, SPI(&spitest.Record{}, 0),
+			Model: "MCP23S08", HWAddr: 4, IFCfg: SPI(&spitest.Record{}, 0),
 		},
 		"missing interface configuration": {
 			Model: "MCP23018", HWAddr: 0,
