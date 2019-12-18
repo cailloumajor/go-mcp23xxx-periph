@@ -1,7 +1,6 @@
 package mcp23xxx
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -25,7 +24,7 @@ type IFCfg func(*Dev) error
 func I2C(bus i2c.Bus) IFCfg {
 	return func(d *Dev) error {
 		if d.isSPI {
-			return fmt.Errorf("inconsistent chip model and interface")
+			return errI2CChip
 		}
 		c := &i2c.Dev{Bus: bus, Addr: uint16(0x20 | d.hwAddr)}
 		d.c = c
@@ -37,7 +36,7 @@ func I2C(bus i2c.Bus) IFCfg {
 func SPI(port spi.Port, f physic.Frequency) IFCfg {
 	return func(d *Dev) error {
 		if !d.isSPI {
-			return fmt.Errorf("inconsistent chip model and interface")
+			return errSPIChip
 		}
 		c, err := port.Connect(f, spi.Mode0, 8)
 		if err != nil {
@@ -59,19 +58,15 @@ func New(opts *Opts) (*Dev, error) {
 
 	f, ok := mcp23xxxChip[opts.Model]
 	if !ok {
-		return bad(errors.New("Unknown chip"))
+		return bad(errUnknownChip)
 	}
 	d.isSPI, d.is16bits = f.isSPI, f.is16bits
 	if opts.HWAddr > f.maxAddr {
-		return bad(fmt.Errorf(
-			"maximum hardware address for %v is %v",
-			opts.Model,
-			f.maxAddr,
-		))
+		return bad(errHWAddrHigh)
 	}
 
 	if opts.IFCfg == nil {
-		return bad(errors.New("missing interface configuration function"))
+		return bad(errMissIntfCfg)
 	}
 	if err := opts.IFCfg(d); err != nil {
 		return bad(err)
@@ -190,5 +185,5 @@ func (d *Dev) makeTxData(ra byte, write *byte) (w, r []byte) {
 }
 
 func (d *Dev) wrap(op string, err error) error {
-	return &mcp23xxxError{d, op, err}
+	return mcp23xxxError{d, op, err}
 }

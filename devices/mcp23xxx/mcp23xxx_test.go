@@ -1,6 +1,7 @@
 package mcp23xxx
 
 import (
+	"reflect"
 	"testing"
 
 	"periph.io/x/periph/conn"
@@ -34,31 +35,36 @@ func TestNew_no_error(t *testing.T) {
 }
 
 func TestNew_error(t *testing.T) {
-	cases := map[string]Opts{
-		"inconsistent I²C": {
+	cases := map[error]Opts{
+		errI2CChip: {
 			Model: "MCP23S09", IFCfg: I2C(&i2ctest.Record{}),
 		},
-		"inconsistent SPI": {
+		errSPIChip: {
 			Model: "MCP23009", IFCfg: SPI(&spitest.Record{}, 0),
 		},
-		"SPI error": {
+		conntest.Errorf("spitest: Connect cannot be called twice"): {
 			Model: "MCP23S17",
 			IFCfg: SPI(&spitest.Record{Initialized: true}, 0),
 		},
-		"unknown chip": {
+		errUnknownChip: {
 			IFCfg: I2C(&i2ctest.Record{}),
 		},
-		"hardware address too high": {
+		errHWAddrHigh: {
 			Model: "MCP23S08", HWAddr: 4, IFCfg: SPI(&spitest.Record{}, 0),
 		},
-		"missing interface configuration": {
+		errMissIntfCfg: {
 			Model: "MCP23018", HWAddr: 0,
 		},
 	}
-	for desc, opts := range cases {
-		t.Run(desc, func(t *testing.T) {
-			if d, err := New(&opts); d != nil || err == nil {
-				t.Fatalf("expected (nil, error), got (%v, %v)", d, err)
+	for exp, opts := range cases {
+		t.Run(exp.Error(), func(t *testing.T) {
+			d, err := New(&opts)
+			be := err.(mcp23xxxError).Unwrap()
+			if d != nil {
+				t.Fatalf("expected %v, got %v", nil, d)
+			}
+			if exp != be && !reflect.DeepEqual(exp, be) {
+				t.Fatalf("expected %v, got %v", exp, be)
 			}
 		})
 	}
