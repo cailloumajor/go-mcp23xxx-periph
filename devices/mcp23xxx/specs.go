@@ -1,13 +1,11 @@
 package mcp23xxx
 
-type features struct {
+var mcp23xxxChip = map[string]struct {
 	isSPI    bool
 	is16bits bool
 	maxAddr  uint8
 	conf     byte
-}
-
-var mcp23xxxChip = map[string]features{
+}{
 	"MCP23008": {false, false, 7, cSEQOP},
 	"MCP23S08": {true, false, 3, cHAEN | cSEQOP},
 	"MCP23009": {false, false, 7, cSEQOP},
