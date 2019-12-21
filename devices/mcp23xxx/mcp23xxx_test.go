@@ -6,6 +6,7 @@ import (
 
 	"periph.io/x/periph/conn"
 	"periph.io/x/periph/conn/conntest"
+	"periph.io/x/periph/conn/gpio/gpiotest"
 	"periph.io/x/periph/conn/i2c/i2ctest"
 	"periph.io/x/periph/conn/spi/spitest"
 )
@@ -21,6 +22,24 @@ func TestNew_no_error(t *testing.T) {
 	cases := map[string]Opts{
 		"I²C": {Model: "MCP23017", IFCfg: I2C(&i2ctest.Record{})},
 		"SPI": {Model: "MCP23S08", IFCfg: SPI(&spitest.Record{}, 0)},
+		"INT active low": {
+			Model:      "MCP23008",
+			IFCfg:      I2C(&i2ctest.Record{}),
+			IRQPin:     &gpiotest.LogPinIO{},
+			INTPinFunc: INTActiveLow,
+		},
+		"INT active high": {
+			Model:      "MCP23009",
+			IFCfg:      I2C(&i2ctest.Record{}),
+			IRQPin:     &gpiotest.LogPinIO{},
+			INTPinFunc: INTActiveHigh,
+		},
+		"INT open drain": {
+			Model:      "MCP23S17",
+			IFCfg:      SPI(&spitest.Record{}, 0),
+			IRQPin:     &gpiotest.LogPinIO{},
+			INTPinFunc: INTOpenDrain,
+		},
 	}
 	for desc, opts := range cases {
 		t.Run(desc, func(t *testing.T) {
@@ -54,6 +73,12 @@ func TestNew_error(t *testing.T) {
 		},
 		errMissIntfCfg: {
 			Model: "MCP23018", HWAddr: 0,
+		},
+		errUnknownINTCfg: {
+			Model:      "MCP23017",
+			IFCfg:      I2C(&i2ctest.Record{}),
+			IRQPin:     &gpiotest.LogPinIO{},
+			INTPinFunc: -1,
 		},
 	}
 	for exp, opts := range cases {

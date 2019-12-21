@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"periph.io/x/periph/conn"
+	"periph.io/x/periph/conn/gpio"
 	"periph.io/x/periph/conn/i2c"
 	"periph.io/x/periph/conn/physic"
 	"periph.io/x/periph/conn/spi"
@@ -12,9 +13,16 @@ import (
 
 // Opts holds the configuration options for the device.
 type Opts struct {
-	Model  string // Chip model
-	HWAddr uint8  // Hardware address (refer to datasheet)
-	IFCfg         // Interface configuration function
+	// Chip model.
+	Model string
+	// Hardware address (refer to datasheet).
+	HWAddr uint8
+	// Interface configuration function.
+	IFCfg
+	// GPIO pin for capturing interrupts. If given, it must be already configured.
+	IRQPin gpio.PinIn
+	// INT pin configuration.
+	INTPinFunc
 }
 
 // IFCfg represents a function to configure the communication interface.
@@ -47,6 +55,20 @@ func SPI(port spi.Port, f physic.Frequency) IFCfg {
 	}
 }
 
+// INTPinFunc represents the configuration of INT pin.
+// Refer to datasheet for possible modes.
+type INTPinFunc int
+
+// Possible INT pin configurations.
+const (
+	// Active driver, active-low (default).
+	INTActiveLow INTPinFunc = iota
+	// Active driver, active-high.
+	INTActiveHigh
+	// Open-drain.
+	INTOpenDrain
+)
+
 // New returns a handle to a MCP23xxx I/O expander.
 func New(opts *Opts) (*Dev, error) {
 	d := &Dev{
@@ -72,7 +94,20 @@ func New(opts *Opts) (*Dev, error) {
 		return bad(err)
 	}
 
-	d.writeReg(rIOCON, f.conf)
+	iocon := f.conf
+	if opts.IRQPin != nil {
+		d.irqPIN = opts.IRQPin
+		switch opts.INTPinFunc {
+		case INTActiveLow:
+		case INTActiveHigh:
+			iocon |= cINTPOL
+		case INTOpenDrain:
+			iocon |= cODR
+		default:
+			return bad(errUnknownINTCfg)
+		}
+	}
+	d.writeReg(rIOCON, iocon)
 
 	return d, nil
 }
@@ -86,6 +121,7 @@ type Dev struct {
 	hwAddr   uint8
 	isSPI    bool
 	is16bits bool
+	irqPIN   gpio.PinIn
 
 	sync.Mutex
 }
